@@ -13,6 +13,8 @@ jobs:
     container:
       image: archlinux:base-devel
       options: --privileged
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout repository
