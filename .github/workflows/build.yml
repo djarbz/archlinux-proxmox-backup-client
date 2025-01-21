@@ -15,6 +15,10 @@ jobs:
       options: --privileged
     permissions:
       contents: write
+    env:
+      BUILD_DIR: /opt/builds
+      AUR_PKG: proxmox-backup-client
+      REPO_DIR: /opt/repo/archlinux/custom/os/x86_64/
 
     steps:
       - name: Checkout repository
@@ -22,39 +26,63 @@ jobs:
 
       - name: Setup system
         run: |
+          set -e
           pacman -Syu --noconfirm
-          pacman -S --noconfirm git sudo base-devel util-linux glibc
+          pacman -S --noconfirm \
+            git \
+            sudo \
+            base-devel \
+            util-linux \
+            glibc \
+            pacman-contrib \
+            rust \
+            cargo
 
       - name: Create build environment
         run: |
+          set -e
           useradd -m builder
           echo "builder ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/builder
-          mkdir -p /opt/builds
-          chown -R builder:builder /opt/builds
+          mkdir -p ${{ env.BUILD_DIR }}
+          chown -R builder:builder ${{ env.BUILD_DIR }}
+
+      - name: Cache downloaded sources
+        uses: actions/cache@v3
+        with:
+          path: |
+            ${{ env.BUILD_DIR }}/.cache
+            /var/cache/pacman/pkg/
+          key: ${{ runner.os }}-pkg-cache-${{ hashFiles('**/PKGBUILD') }}
+          restore-keys: |
+            ${{ runner.os }}-pkg-cache-
 
       - name: Clone AUR package
         run: |
-          cd /opt/builds
-          sudo -u builder git clone --depth=1 https://aur.archlinux.org/proxmox-backup-client.git
-          chown -R builder:builder proxmox-backup-client
+          set -e
+          cd ${{ env.BUILD_DIR }}
+          sudo -u builder git clone --depth=1 https://aur.archlinux.org/${{ env.AUR_PKG }}.git
+          chown -R builder:builder ${{ env.AUR_PKG }}
 
       - name: Build package
         run: |
-          cd /opt/builds/proxmox-backup-client
+          set -e
+          cd ${{ env.BUILD_DIR }}/${{ env.AUR_PKG }}
           sudo -u builder makepkg -s --noconfirm
 
       - name: Create package repository
         run: |
-          mkdir -p repo/custom/os/x86_64
-          mv /opt/builds/proxmox-backup-client/*.pkg.tar.zst repo/archlinux/custom/os/x86_64/
-          cd repo/archlinux/custom/os/x86_64
+          set -e
+          mkdir -p ${{ env.REPO_DIR }}
+          chown -R builder:builder ${{ env.REPO_DIR }}
+          mv ${{ env.BUILD_DIR }}/${{ env.AUR_PKG }}/*.pkg.tar.zst ${{ env.REPO_DIR }}
+          cd ${{ env.REPO_DIR }}
           repo-add custom.db.tar.gz *.pkg.tar.zst
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./repo
+          publish_dir: /opt/repo
           publish_branch: repo
           force_orphan: true
           enable_jekyll: false
@@ -63,5 +91,5 @@ jobs:
       - name: Upload package artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: proxmox-backup-client-package
-          path: repo/archlinux/custom/os/x86_64/*.pkg.tar.zst
+          name: ${{ env.AUR_PKG }}-package
+          path: ${{ env.REPO_DIR }}/*.pkg.tar.zst
