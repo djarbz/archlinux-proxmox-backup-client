@@ -45,16 +45,17 @@ jobs:
 
       - name: Create package repository
         run: |
-          mkdir -p repo
-          mv /opt/builds/proxmox-backup-client/*.pkg.tar.zst repo/
-          repo-add repo/custom.db.tar.gz repo/*.pkg.tar.zst
+          mkdir -p repo/custom/os/x86_64
+          mv /opt/builds/proxmox-backup-client/*.pkg.tar.zst repo/archlinux/custom/os/x86_64/
+          cd repo/archlinux/custom/os/x86_64
+          repo-add custom.db.tar.gz *.pkg.tar.zst
 
       - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
+        uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./repo
-          publish_branch: repo  # This branch will contain your package repository
+          publish_branch: repo
           force_orphan: true
           enable_jekyll: false
           commit_message: "Update package repository"
@@ -63,4 +64,4 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: proxmox-backup-client-package
-          path: repo/*.pkg.tar.zst
+          path: repo/archlinux/custom/os/x86_64/*.pkg.tar.zst
