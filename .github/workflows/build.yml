@@ -68,6 +68,17 @@ jobs:
         run: |
           set -e
           cd ${{ env.BUILD_DIR }}/${{ env.AUR_PKG }}
+
+          # 1. Best practice: Ensure the 'builder' user owns the files.
+          sudo chown -R builder:builder .
+      
+          # 2. Set RUSTFLAGS to suppress the specific compiler warnings.
+          #    -A dead_code: Allows (A) dead code.
+          #    -A mismatched_lifetime_syntaxes: Allows the lifetime syntax inconsistencies.
+          export RUSTFLAGS="-A dead_code -A mismatched_lifetime_syntaxes"
+      
+          # 3. Run the build as the 'builder' user.
+          #    The exported RUSTFLAGS will be picked up by the compiler.
           sudo -u builder makepkg -s --noconfirm
 
       - name: Create package repository
