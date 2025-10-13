@@ -22,9 +22,6 @@ jobs:
       REPO_DIR: /opt/repo/archlinux/custom/os/x86_64/
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
       - name: Setup system
         run: |
           set -e
@@ -38,6 +35,10 @@ jobs:
             pacman-contrib \
             rust \
             cargo
+          pacman -S --noconfirm nodejs npm
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
       - name: Create build environment
         run: |
