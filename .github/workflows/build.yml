@@ -38,7 +38,7 @@ jobs:
           pacman -S --noconfirm nodejs npm
 
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Create build environment
         run: |
@@ -49,7 +49,7 @@ jobs:
           chown -R builder:builder ${{ env.BUILD_DIR }}
 
       - name: Cache downloaded sources
-        uses: actions/cache@v3
+        uses: actions/cache@v5
         with:
           path: |
             ${{ env.BUILD_DIR }}/.cache
@@ -69,10 +69,10 @@ jobs:
         run: |
           set -e
           cd ${{ env.BUILD_DIR }}/${{ env.AUR_PKG }}
-          
+
           # 1. Best practice: Ensure the 'builder' user owns the files.
           sudo chown -R builder:builder .
-          
+
           # 2. Set RUSTFLAGS to suppress all warnings and the fatal error.
           #    We are adding flags for:
           #    - unused_imports, deprecated, unused_unsafe, unused_parens (new warnings)
@@ -100,7 +100,7 @@ jobs:
           repo-add custom.db.tar.gz *.pkg.tar.zst
 
       - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
+        uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: /opt/repo
@@ -110,7 +110,7 @@ jobs:
           commit_message: "Update package repository"
 
       - name: Upload package artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ env.AUR_PKG }}-package
           path: ${{ env.REPO_DIR }}/*.pkg.tar.zst
